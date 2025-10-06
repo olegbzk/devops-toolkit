@@ -13,7 +13,7 @@ jobs:
     name: Build ➡️ Push
     runs-on: ubuntu-latest
     env:
-      REGISTRY_IMAGE: rooibos75/devops-toolkit
+      REGISTRY_IMAGE: docker.io/rooibos75/devops-toolkit
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
@@ -55,6 +55,7 @@ jobs:
             ${{ steps.versions.outputs.build_args }} \
             .
           if [[ "${{ steps.tag.outputs.is_semver }}" == "true" ]]; then
+            echo "Tagging image ${REGISTRY_IMAGE}:${IMAGE_TAG} as latest"
             docker tag ${REGISTRY_IMAGE}:${IMAGE_TAG} ${REGISTRY_IMAGE}:latest
           fi
 

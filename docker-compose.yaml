@@ -3,7 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.base
-    image: devops-toolkit:${VERSION_TAG}_base
+      args:
+        REGISTRY_IMAGE: ${REGISTRY_IMAGE}
+    image: ${REGISTRY_IMAGE}:${VERSION_TAG}_base
 
   aws:
     build:
@@ -11,7 +13,8 @@ services:
       dockerfile: "Dockerfile.aws"
       args:
         BASE_VERSION: ${VERSION_TAG}
-    image: devops-toolkit:${VERSION_TAG}_aws
+        REGISTRY_IMAGE: ${REGISTRY_IMAGE}
+    image: ${REGISTRY_IMAGE}:${VERSION_TAG}_aws
     depends_on:
       - base
 
@@ -21,7 +24,8 @@ services:
       dockerfile: Dockerfile.azure
       args:
         BASE_VERSION: ${VERSION_TAG}
-    image: devops-toolkit:${VERSION_TAG}_azure
+        REGISTRY_IMAGE: ${REGISTRY_IMAGE}
+    image: ${REGISTRY_IMAGE}:${VERSION_TAG}_azure
     depends_on:
       - base
   

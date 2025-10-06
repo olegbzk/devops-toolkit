@@ -1,5 +1,6 @@
 ARG BASE_VERSION=latest
-FROM devops-toolkit:${BASE_VERSION}_base
+ARG REGISTRY_IMAGE=devops-toolkit
+FROM ${REGISTRY_IMAGE}:${BASE_VERSION}_base
 
 ARG AWSCLI_VERSION=2.24.24
 RUN mkdir /tmp/awscli_env/ && \

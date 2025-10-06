@@ -10,7 +10,7 @@ services:
   aws:
     build:
       context: .
-      dockerfile: "Dockerfile.aws"
+      dockerfile: Dockerfile.aws
       args:
         BASE_VERSION: ${VERSION_TAG}
         REGISTRY_IMAGE: ${REGISTRY_IMAGE}

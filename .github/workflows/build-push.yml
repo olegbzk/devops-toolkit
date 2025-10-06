@@ -10,9 +10,9 @@ on:
       - '.github/workflows/*'
 
 jobs:
-  buildandpush:
+  buildpush:
+    name: Build ➡️ Push
     runs-on: ubuntu-latest
-    environment: dockerhub
     env:
       REGISTRY_IMAGE: rooibos75/devops-toolkit
     steps:
@@ -32,7 +32,21 @@ jobs:
         env:
           VERSION_TAG: ${{ steps.get_version.outputs.version }}
         run: |
-          docker compose -f docker-compose.yaml build
+          docker buildx create --use --name xbuilder 
+          docker buildx build -f Dockerfile.base --progress plain --push -t ${REGISTRY_IMAGE}:${VERSION_TAG}_base \
+            --cache-to type=registry,ref=${REGISTRY_IMAGE}:build-cache \
+            --cache-from type=registry,ref=${REGISTRY_IMAGE}:build-cache \
+            --build-arg REGISTRY_IMAGE=${REGISTRY_IMAGE} \
+            --build-arg BASE_VERSION=${VERSION_TAG} \
+            .
+          for dockerfile in "Dockerfile.aws" "Dockerfile.azure"; do
+            suffix=$(echo $dockerfile | cut -d'.' -f2)
+            echo "Building image for $suffix"
+            docker buildx build -f $dockerfile --progress plain --push -t ${REGISTRY_IMAGE}:${VERSION_TAG}_$suffix \
+              --build-arg REGISTRY_IMAGE=${REGISTRY_IMAGE} \
+              --build-arg BASE_VERSION=${VERSION_TAG} \
+              .
+          done
 
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@v4

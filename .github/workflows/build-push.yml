@@ -13,7 +13,7 @@ jobs:
     name: Build ➡️ Push
     runs-on: ubuntu-latest
     env:
-      REGISTRY_IMAGE: docker.io/rooibos75/devops-toolkit
+      REGISTRY_IMAGE: rooibos75/devops-toolkit
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
@@ -35,7 +35,7 @@ jobs:
             echo "image_tag=$ref-${{ github.run_number }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Load versions from JSON
+      - name: Load app versions from JSON
         id: versions
         run: |
           BUILD_ARGS=$(jq -r 'to_entries | map("--build-arg \(.key)=\(.value)") | join(" ")' versions.json)
@@ -45,33 +45,35 @@ jobs:
           echo "Build arguments: $BUILD_ARGS"
 
       - name: Build the Docker image
-        env:
-          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
         run: |
           docker buildx create --use --name xbuilder 
-          docker buildx build -f Dockerfile --progress plain --push -t ${REGISTRY_IMAGE}:${IMAGE_TAG} \
+          docker buildx build --load --progress plain -t ${REGISTRY_IMAGE}:test \
             --cache-to type=registry,ref=${REGISTRY_IMAGE}:build-cache \
             --cache-from type=registry,ref=${REGISTRY_IMAGE}:build-cache \
             ${{ steps.versions.outputs.build_args }} \
             .
-          if [[ "${{ steps.tag.outputs.is_semver }}" == "true" ]]; then
-            echo "Tagging image ${REGISTRY_IMAGE}:${IMAGE_TAG} as latest"
-            docker tag ${REGISTRY_IMAGE}:${IMAGE_TAG} ${REGISTRY_IMAGE}:latest
-          fi
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@0.30.0
-        if: ${{  steps.tag.outputs.is_semver == 'true'  }}
         with:
-          image-ref: ${{ env.REGISTRY_IMAGE }}:latest
+          image-ref: ${{ env.REGISTRY_IMAGE }}:test
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      - name: Push latest tag if semver
-        if: ${{  steps.tag.outputs.is_semver == 'true'  }}
+      - name: Docker tags and push
+        env: 
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
         run: |
-          docker push ${REGISTRY_IMAGE}:latest
+          docker tag ${REGISTRY_IMAGE}:test ${REGISTRY_IMAGE}:${IMAGE_TAG}
+          docker push ${REGISTRY_IMAGE}:${IMAGE_TAG}
+          if [[ "${{ steps.tag.outputs.is_semver }}" == "true" ]]; then
+            echo "Tagging image ${REGISTRY_IMAGE}:${IMAGE_TAG} as latest"
+            docker tag ${REGISTRY_IMAGE}:${IMAGE_TAG} ${REGISTRY_IMAGE}:latest
+            docker push ${REGISTRY_IMAGE}:latest 
+          fi
+          
+          
 

@@ -17,6 +17,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-full \
     python3-pip 
 
+ARG AZURECLI_VERSION=2.70.0
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -sLS https://packages.microsoft.com/keys/microsoft.asc | \
+    gpg --dearmor | \
+    tee /etc/apt/keyrings/microsoft.gpg > /dev/null && \
+    chmod go+r /etc/apt/keyrings/microsoft.gpg && \
+    AZ_DIST=$(lsb_release -cs) && \
+    echo "deb [arch=`dpkg --print-architecture` signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" | \
+    tee /etc/apt/sources.list.d/azure-cli.list && \
+    apt-get update && \
+    apt-get install --no-install-recommends -y azure-cli=$AZURECLI_VERSION-1~$AZ_DIST
+
+ARG AWSCLI_VERSION=2.24.24
+RUN mkdir /tmp/awscli_env/ && \
+    cd /tmp/awscli_env/ && \
+    curl -LO "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip" && \
+    unzip -qq awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip && ./aws/install && rm -rf /tmp/awscli_env/
+
 ARG ANSIBLE_VERSION=2.18.3
 RUN python3 -m pip install ansible-core==${ANSIBLE_VERSION} --break-system-packages
 

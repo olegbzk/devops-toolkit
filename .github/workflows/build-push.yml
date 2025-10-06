@@ -1,13 +1,12 @@
-name: Deploy - Docker Image Latest (main)
+name: Deploy - Docker Image
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - '*'
     tags:
-      - 'v*'
-    paths:
-      - 'Dockerfile'
-      - '.github/workflows/*'
+      - "v*.*.*"
 
 jobs:
   buildpush:
@@ -25,33 +24,51 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
-      - id: get_version
-        uses: baileyherbert/version-action@v3
+      - name: Set IMAGE_TAG
+        id: tag
+        run: |
+          ref="${GITHUB_REF##*/}"
+          if [[ "$ref" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "image_tag=$ref" >> $GITHUB_OUTPUT
+            echo "is_semver=true" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Load versions from JSON
+        id: versions
+        run: |
+          BUILD_ARGS=$(jq -r 'to_entries | map("--build-arg \(.key)=\(.value)") | join(" ")' versions.json)
+          BUILD_ARGS="$BUILD_ARGS --build-arg REGISTRY_IMAGE=${REGISTRY_IMAGE}"
+          BUILD_ARGS="$BUILD_ARGS --build-arg BASE_VERSION=${{ steps.tag.outputs.image_tag }}"
+          echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
+          echo "Build arguments: $BUILD_ARGS"
 
       - name: Build the Docker image
         env:
-          VERSION_TAG: ${{ steps.get_version.outputs.version }}
+          IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
         run: |
           docker buildx create --use --name xbuilder 
-          docker buildx build -f Dockerfile.base --progress plain --push -t ${REGISTRY_IMAGE}:${VERSION_TAG}_base \
+          docker buildx build -f Dockerfile.base --progress plain --push -t ${REGISTRY_IMAGE}:${IMAGE_TAG} \
             --cache-to type=registry,ref=${REGISTRY_IMAGE}:build-cache \
             --cache-from type=registry,ref=${REGISTRY_IMAGE}:build-cache \
-            --build-arg REGISTRY_IMAGE=${REGISTRY_IMAGE} \
-            --build-arg BASE_VERSION=${VERSION_TAG} \
+            ${{ steps.versions.outputs.build_args }} \
             .
-          for dockerfile in "Dockerfile.aws" "Dockerfile.azure"; do
-            suffix=$(echo $dockerfile | cut -d'.' -f2)
-            echo "Building image for $suffix"
-            docker buildx build -f $dockerfile --progress plain --push -t ${REGISTRY_IMAGE}:${VERSION_TAG}_$suffix \
-              --build-arg REGISTRY_IMAGE=${REGISTRY_IMAGE} \
-              --build-arg BASE_VERSION=${VERSION_TAG} \
-              .
-          done
+          if [[ "${{ steps.tag.outputs.is_semver }}" == "true" ]]; then
+            docker tag ${REGISTRY_IMAGE}:${IMAGE_TAG} ${REGISTRY_IMAGE}:latest
+            docker push ${REGISTRY_IMAGE}:latest
+          fi
 
-      - name: Docker Hub Description
-        uses: peter-evans/dockerhub-description@v4
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.30.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${REGISTRY_IMAGE}
-          enable-url-completion: true
+          image-ref: ${REGISTRY_IMAGE}:${{ steps.tag.outputs.image_tag }}
+          format: 'sarif'
+          exit-code: 0
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+            sarif_file: 'trivy-results.sarif'

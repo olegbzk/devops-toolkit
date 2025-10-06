@@ -56,19 +56,21 @@ jobs:
             .
           if [[ "${{ steps.tag.outputs.is_semver }}" == "true" ]]; then
             docker tag ${REGISTRY_IMAGE}:${IMAGE_TAG} ${REGISTRY_IMAGE}:latest
-            docker push ${REGISTRY_IMAGE}:latest
           fi
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@0.30.0
+        if: ${{  steps.tag.outputs.is_semver == 'true'  }}
         with:
-          image-ref: ${{ env.REGISTRY_IMAGE }}:${{ steps.tag.outputs.image_tag }}
-          format: "sarif"
-          exit-code: 0
-          severity: "CRITICAL,HIGH"
-          output: "trivy-results.sarif"
+          image-ref: ${{ env.REGISTRY_IMAGE }}:latest
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: "trivy-results.sarif"
+      - name: Push latest tag if semver
+        if: ${{  steps.tag.outputs.is_semver == 'true'  }}
+        run: |
+          docker push ${REGISTRY_IMAGE}:latest
+

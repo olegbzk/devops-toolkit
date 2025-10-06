@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     lsb-release \
     git \
     jq \
-    wget \
     unzip \
     openssh-client \
     locales \
@@ -40,10 +39,8 @@ RUN mkdir /tmp/kubectl_env/ && \
 ARG AWSCLI_VERSION=2.24.24
 RUN mkdir /tmp/awscli_env/ && \
     cd /tmp/awscli_env/ && \
-    wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip" && \
-    unzip awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip && \
-    ./aws/install && \
-    rm -rf /tmp/awscli_env/
+    curl -LO "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip" && \
+    unzipc -qq awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip && ./aws/install && rm -rf /tmp/awscli_env/
 
 ARG AZURECLI_VERSION=2.70.0
 RUN mkdir -p /etc/apt/keyrings && \
@@ -60,7 +57,7 @@ RUN mkdir -p /etc/apt/keyrings && \
 ARG HELM_VERSION=3.19.0
 RUN mkdir /tmp/helm_env/ && \
     cd /tmp/helm_env/ && \
-    wget https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
+    curl -LO https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
     tar -xvzf helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
     mv linux-amd64/helm /usr/local/bin/helm && \
     rm -rf /tmp/helm_env/

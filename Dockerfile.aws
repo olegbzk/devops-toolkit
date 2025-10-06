@@ -1,0 +1,9 @@
+ARG BASE_VERSION=latest
+FROM devops-toolkit:${BASE_VERSION}_base
+
+ARG AWSCLI_VERSION=2.24.24
+RUN mkdir /tmp/awscli_env/ && \
+    cd /tmp/awscli_env/ && \
+    curl -LO "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip" && \
+    unzip -qq awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip && ./aws/install && rm -rf /tmp/awscli_env/
+

@@ -1,0 +1,27 @@
+services:
+  base:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    image: devops-toolkit:${VERSION_TAG}_base
+
+  aws:
+    build:
+      context: .
+      dockerfile: "Dockerfile.aws"
+      args:
+        BASE_VERSION: ${VERSION_TAG}
+    image: devops-toolkit:${VERSION_TAG}_aws
+    depends_on:
+      - base
+
+  azure:
+    build:
+      context: .
+      dockerfile: Dockerfile.azure
+      args:
+        BASE_VERSION: ${VERSION_TAG}
+    image: devops-toolkit:${VERSION_TAG}_azure
+    depends_on:
+      - base
+  

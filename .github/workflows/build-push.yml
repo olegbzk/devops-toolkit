@@ -3,11 +3,10 @@ name: Deploy - Docker Image Latest (main)
 on:
   workflow_dispatch:
   push:
-    branches: 
-      - main
+    tags:
+      - 'v*'
     paths:
       - 'Dockerfile'
-      - 'scripts/*'
       - '.github/workflows/*'
 
 jobs:
@@ -25,21 +24,15 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - id: get_version
+        uses: baileyherbert/version-action@v3
 
       - name: Build the Docker image
+        env:
+          VERSION_TAG: ${{ steps.get_version.outputs.version }}
         run: |
-          docker build . --file Dockerfile --tag "devops-toolkit-merge:$GITHUB_SHA"
-
-      - name: Push Docker Image
-        run: |
-          SHA7=${GITHUB_SHA::7}
-          docker tag "devops-toolkit-merge:$GITHUB_SHA" "$REGISTRY_IMAGE:main-$SHA7"
-          docker tag "devops-toolkit-merge:$GITHUB_SHA" "$REGISTRY_IMAGE:latest"
-          docker images
-          echo "Push image with SHA"
-          docker push "$REGISTRY_IMAGE:main-$SHA7"
-          echo "Push latest image"
-          docker push "$REGISTRY_IMAGE:latest"
+          docker compose -f docker-compose.yaml build --push
 
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@v4

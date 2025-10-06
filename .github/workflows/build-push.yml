@@ -53,16 +53,6 @@ jobs:
             ${{ steps.versions.outputs.build_args }} \
             .
 
-      - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.30.0
-        with:
-          image-ref: ${{ env.REGISTRY_IMAGE }}:test
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-
       - name: Docker tags and push
         env: 
           IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}

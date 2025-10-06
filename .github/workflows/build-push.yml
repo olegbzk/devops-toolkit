@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - '*'
+      - "*"
     tags:
       - "v*.*.*"
 
@@ -23,7 +23,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       - name: Set IMAGE_TAG
         id: tag
         run: |
@@ -49,7 +49,7 @@ jobs:
           IMAGE_TAG: ${{ steps.tag.outputs.image_tag }}
         run: |
           docker buildx create --use --name xbuilder 
-          docker buildx build -f Dockerfile.base --progress plain --push -t ${REGISTRY_IMAGE}:${IMAGE_TAG} \
+          docker buildx build -f Dockerfile --progress plain --push -t ${REGISTRY_IMAGE}:${IMAGE_TAG} \
             --cache-to type=registry,ref=${REGISTRY_IMAGE}:build-cache \
             --cache-from type=registry,ref=${REGISTRY_IMAGE}:build-cache \
             ${{ steps.versions.outputs.build_args }} \
@@ -63,12 +63,12 @@ jobs:
         uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: ${REGISTRY_IMAGE}:${{ steps.tag.outputs.image_tag }}
-          format: 'sarif'
+          format: "sarif"
           exit-code: 0
-          severity: 'CRITICAL,HIGH'
-          output: 'trivy-results.sarif'
+          severity: "CRITICAL,HIGH"
+          output: "trivy-results.sarif"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-            sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"

@@ -59,5 +59,6 @@ jobs:
       - name: Build the Docker image
         run: |
           docker buildx create --use --name xbuilder
+          docker buildx build bake --print
           docker buildx build bake --progress plain -f docker-bake.hcl --push
 

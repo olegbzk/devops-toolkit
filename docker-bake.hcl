@@ -27,7 +27,7 @@ function "set_tags" {
 
 
 group "default" {
-  targets = ["ubuntu"]
+  targets = ["ubuntu", "github-runner"]
 }
 
 target "ubuntu" {

@@ -1,10 +1,9 @@
 name: Deploy - Docker Image
 
 on:
-  workflow_dispatch:
   push:
     branches:
-      - "*"
+      - "**"
     tags:
       - "v*.*.*"
 
@@ -17,6 +16,8 @@ jobs:
       is_semver: ${{ steps.set_output.outputs.is_semver }}
       build_args: ${{ steps.set_output.outputs.build_args }}
     steps:
+        - name: Check out the repo
+          uses: actions/checkout@v5
         - name: Set image tag
           id: set_output
           run: |

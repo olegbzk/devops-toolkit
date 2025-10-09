@@ -15,8 +15,6 @@ jobs:
       version: ${{ steps.set_output.outputs.version }}
       is_semver: ${{ steps.set_output.outputs.is_semver }}
     steps:
-        - name: Check out the repo
-          uses: actions/checkout@v5
         - name: Set image tag
           id: set_output
           run: |

@@ -1,0 +1,50 @@
+ARG UBUNTU_VERSION=v2.328.0-ubuntu-22.04
+FROM summerwind/actions-runner:${UBUNTU_VERSION}
+#https://github.com/actions/actions-runner-controller/blob/master/runner/actions-runner.ubuntu-24.04.dockerfile
+
+
+USER root
+
+ARG TOFU_VERSION=1.10.6
+RUN mkdir /tmp/tofu_env/ && \
+    cd /tmp/tofu_env/ && \
+    curl -LO https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.zip && \
+    unzip tofu_${TOFU_VERSION}_linux_amd64.zip && \
+    cp tofu /usr/local/bin/ && chmod +x /usr/local/bin/tofu && \
+    rm -rf /tmp/tofu_env/
+
+ARG KUBECTL_VERSION=1.32.3
+RUN mkdir /tmp/kubectl_env/ && \
+    cd /tmp/kubectl_env/ && \
+    curl -LO "https://dl.k8s.io/release/v$KUBECTL_VERSION/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv ./kubectl /usr/local/bin/kubectl && \
+    rm -rf /tmp/kubectl_env/
+
+ARG HELM_VERSION=3.19.0
+RUN mkdir /tmp/helm_env/ && \
+    cd /tmp/helm_env/ && \
+    curl -LO https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
+    tar -xvzf helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
+    mv linux-amd64/helm /usr/local/bin/helm && \
+    rm -rf /tmp/helm_env/
+
+RUN helm plugin install https://github.com/databus23/helm-diff --version v3.13.0 && \
+    helm plugin install https://github.com/jkroepke/helm-secrets --version 4.6.10
+
+ARG HELMFILE_VERSION=1.1.7
+RUN curl -L https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz -o /tmp/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz && \
+    tar -xf /tmp/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz -C /tmp/ && mv /tmp/helmfile /usr/local/bin/helmfile  && chmod +x /usr/local/bin/helmfile
+
+ARG YQ_VERSION=4.44.2
+RUN curl -L https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64.tar.gz -o /tmp/yq_linux_amd64.tar.gz && \
+    tar -xf /tmp/yq_linux_amd64.tar.gz -C /tmp/ && mv /tmp/yq_linux_amd64 /usr/local/bin/yq  && chmod +x /usr/local/bin/yq
+
+ARG SOPS_VERSION=3.11.0
+RUN curl -L https://github.com/mozilla/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64 -o /usr/local/bin/sops && chmod +x /usr/local/bin/sops
+
+ARG AGE_VERSION=1.2.1  
+RUN curl -L https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz -o /tmp/age-linux-amd64.tar.gz && \
+    tar -xf /tmp/age-linux-amd64.tar.gz -C /tmp &&  mv /tmp/age/age* /usr/local/bin/ && chmod +x /usr/local/bin/age /usr/local/bin/age-keygen
+
+USER runner

@@ -48,6 +48,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build the Docker image
+        env: 
+          REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.image_name_suffix }}
         run: |
           export BUILD_ARGS=$(jq -c '.' versions.json)
           docker buildx create --use --name xbuilder

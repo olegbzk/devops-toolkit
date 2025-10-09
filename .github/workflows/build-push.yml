@@ -14,7 +14,6 @@ jobs:
     outputs:
       version: ${{ steps.set_output.outputs.version }}
       is_semver: ${{ steps.set_output.outputs.is_semver }}
-      build_args: ${{ steps.set_output.outputs.build_args }}
     steps:
         - name: Check out the repo
           uses: actions/checkout@v5
@@ -29,11 +28,6 @@ jobs:
             echo "version=$ref-${{ github.run_number }}" >> $GITHUB_OUTPUT
             fi
 
-            BUILD_ARGS=$(jq -r 'to_entries | map("--build-arg \(.key)=\(.value)") | join(" ")' versions.json)
-            echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
-            echo "Build arguments: $BUILD_ARGS" 
-
-
   buildpush:
     name: Build ➡️ Push
     runs-on: ubuntu-latest
@@ -45,7 +39,6 @@ jobs:
       IMAGE_NAME: devops-toolkit
       IMAGE_TAG: ${{ needs.prepare.outputs.version }}
       IS_SEMVER: ${{ needs.prepare.outputs.is_semver }}
-      BUILD_ARGS: ${{ needs.prepare.outputs.build_args }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
@@ -58,6 +51,7 @@ jobs:
 
       - name: Build the Docker image
         run: |
+          export BUILD_ARGS=$(jq -c '.' versions.json)
           docker buildx create --use --name xbuilder
           docker buildx bake --print
           docker buildx bake --progress plain -f docker-bake.hcl --push

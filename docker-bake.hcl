@@ -16,8 +16,9 @@ variable "REGISTRY" {
 }
 
 variable "BUILD_ARGS" {
-  default = {}
+  default = ""
 }
+
 
 function "set_tags" {
   params = [base_image_name]
@@ -26,17 +27,17 @@ function "set_tags" {
 
 
 group "default" {
-  targets = ["ubuntu", "github-runner"]
+  targets = ["ubuntu"]
 }
 
 target "ubuntu" {
   dockerfile = "Dockerfile.ubuntu"
   tags       = set_tags("ubuntu")
-  args       = BUILD_ARGS
+  args       = jsondecode(BUILD_ARGS)
 }
 
 target "github-runner" {
   dockerfile = "Dockerfile.github-runner"
   tags       = set_tags("github-runner")
-  args       = BUILD_ARGS
+  args       = jsondecode(BUILD_ARGS)
 }

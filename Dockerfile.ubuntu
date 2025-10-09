@@ -40,7 +40,7 @@ ARG AWSCLI_VERSION=2.24.24
 RUN mkdir /tmp/awscli_env/ && \
     cd /tmp/awscli_env/ && \
     curl -LO "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip" && \
-    unzipc -qq awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip && ./aws/install && rm -rf /tmp/awscli_env/
+    unzip -qq awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip && ./aws/install && rm -rf /tmp/awscli_env/
 
 ARG AZURECLI_VERSION=2.70.0
 RUN mkdir -p /etc/apt/keyrings && \

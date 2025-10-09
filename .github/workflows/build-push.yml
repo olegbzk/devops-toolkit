@@ -14,10 +14,7 @@ jobs:
     outputs:
       version: ${{ steps.set_output.outputs.version }}
       is_semver: ${{ steps.set_output.outputs.is_semver }}
-      build_args: ${{ steps.set_output.outputs.build_args }}
     steps:
-        - name: Check out the repo
-          uses: actions/checkout@v5
         - name: Set image tag
           id: set_output
           run: |
@@ -29,13 +26,6 @@ jobs:
             echo "version=$ref-${{ github.run_number }}" >> $GITHUB_OUTPUT
             fi
 
-            BUILD_ARGS=$(jq -r 'to_entries | map("--build-arg \(.key)=\(.value)") | join(" ")' versions.json)
-            BUILD_ARGS="$BUILD_ARGS --build-arg REGISTRY_IMAGE=${REGISTRY_IMAGE}"
-            BUILD_ARGS="$BUILD_ARGS --build-arg BASE_VERSION=$ref"
-            echo "build_args=$BUILD_ARGS" >> $GITHUB_OUTPUT
-            echo "Build arguments: $BUILD_ARGS" 
-
-
   buildpush:
     name: Build ➡️ Push
     runs-on: ubuntu-latest
@@ -46,11 +36,7 @@ jobs:
       REGISTRY: rooibos75
       IMAGE_NAME: devops-toolkit
       IMAGE_TAG: ${{ needs.prepare.outputs.version }}
-    strategy:
-      matrix:
-        include:
-          - image_name_suffix: github-runner
-          - image_name_suffix: ubuntu
+      IS_SEMVER: ${{ needs.prepare.outputs.is_semver }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
@@ -65,24 +51,8 @@ jobs:
         env: 
           REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.image_name_suffix }}
         run: |
-          docker buildx create --use --name xbuilder 
-          docker buildx build --load --progress plain -f Dockerfile.${{ matrix.image_name_suffix }} -t ${REGISTRY_IMAGE}:test \
-            --cache-to type=registry,ref=${REGISTRY_IMAGE}:build-cache \
-            --cache-from type=registry,ref=${REGISTRY_IMAGE}:build-cache \
-            ${{ steps.versions.outputs.build_args }} \
-            .
-
-      - name: Docker tags and push
-        env:
-          REGISTRY_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.image_name_suffix }}
-        run: |
-          docker tag ${REGISTRY_IMAGE}:test ${REGISTRY_IMAGE}:${IMAGE_TAG}
-          docker push ${REGISTRY_IMAGE}:${IMAGE_TAG}
-          if [[ "${{ steps.tag.outputs.is_semver }}" == "true" ]]; then
-            echo "Tagging image ${REGISTRY_IMAGE}:${IMAGE_TAG} as latest"
-            docker tag ${REGISTRY_IMAGE}:${IMAGE_TAG} ${REGISTRY_IMAGE}:latest
-            docker push ${REGISTRY_IMAGE}:latest
-          fi
-          
-          
+          export BUILD_ARGS=$(jq -c '.' versions.json)
+          docker buildx create --use --name xbuilder
+          docker buildx bake --print
+          docker buildx bake --progress plain -f docker-bake.hcl --push
 
